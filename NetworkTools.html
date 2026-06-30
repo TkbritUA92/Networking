@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Tools Lab: Terminal Simulator</title>
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --terminal-bg: #05070c;
+            --text-main: #f1f5f9;
+            --text-muted: #64748b;
+            --terminal-green: #38bdf8; /* Modern blue-terminal style */
+            --terminal-text: #e2e8f0;
+            --accent: #38bdf8;
+            --success: #10b981;
+            --error: #ef4444;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 30px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .wrapper {
+            max-width: 1200px;
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr 1.8fr;
+            gap: 30px;
+        }
+
+        /* Sidebar Briefing */
+        .briefing-panel {
+            background-color: #111827;
+            border: 1px solid #1f2937;
+            border-radius: 8px;
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        h1 { font-size: 1.75rem; color: #fff; margin-bottom: 10px; }
+        h1 span { color: var(--accent); }
+        .objective-box {
+            background-color: #1f2937;
+            padding: 15px;
+            border-left: 4px solid var(--accent);
+            border-radius: 4px;
+            margin: 15px 0;
+        }
+        .objective-box h3 { margin-bottom: 5px; font-size: 1rem; color: #fff; }
+        .objective-box p { font-size: 0.9rem; color: #9ca3af; line-height: 1.4; }
+
+        .tool-legend {
+            margin-top: 20px;
+        }
+        .tool-legend h4 { color: #fff; font-size: 0.95rem; margin-bottom: 10px; }
+        .tool-item {
+            font-family: monospace;
+            background: #1f2937;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            color: #cbd5e1;
+        }
+        .tool-item span { color: #94a3b8; font-family: sans-serif; font-size: 0.8rem; }
+
+        /* Terminal Window */
+        .terminal-container {
+            background-color: var(--terminal-bg);
+            border: 1px solid #334155;
+            border-radius: 8px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            display: flex;
+            flex-direction: column;
+            height: 600px;
+            overflow: hidden;
+        }
+
+        .terminal-header {
+            background-color: #1e293b;
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid #334155;
+        }
+
+        .terminal-buttons {
+            display: flex;
+            gap: 6px;
+            margin-right: 15px;
+        }
+        .dot { width: 12px; height: 12px; border-radius: 50%; }
+        .dot.red { background-color: #ef4444; }
+        .dot.yellow { background-color: #f59e0b; }
+        .dot.green { background-color: #10b981; }
+        .terminal-title {
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+
+        .terminal-body {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.95rem;
+            color: var(--terminal-text);
+            line-height: 1.5;
+        }
+
+        .output-block {
+            white-space: pre-wrap;
+            margin-bottom: 15px;
+        }
+
+        .input-line {
+            display: flex;
+            align-items: center;
+        }
+
+        .prompt {
+            color: var(--terminal-green);
+            margin-right: 10px;
+            font-weight: bold;
+        }
+
+        .terminal-input {
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.95rem;
+            flex-grow: 1;
+            outline: none;
+        }
+
+        /* Diagnosis Form */
+        .diagnosis-box {
+            margin-top: 15px;
+            background: #111827;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #1f2937;
+        }
+        select, button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 4px;
+            border: 1px solid #4b5563;
+            background: #1f2937;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button { background: var(--accent); color: #000; border: none; transition: opacity 0.2s;}
+        button:hover { opacity: 0.9; }
+    </style>
+</head>
+<body>
+
+<div class="wrapper">
+    <div class="briefing-panel">
+        <div>
+            <h1>Command Line <span>Triage</span></h1>
+            <p style="color: var(--text-muted); font-size: 0.95rem;">You are the Tier 1 Network Engineer on duty.</p>
+            
+            <div class="objective-box">
+                <h3>The Incident Report:</h3>
+                <p>Users are complaining they cannot load the internal dashboard website at <code>internal-intranet.local</code>. Physical cables are fine.</p>
+            </div>
+
+            <div class="objective-box" style="border-color: var(--success)">
+                <h3>Your Objective:</h3>
+                <p>Use the simulator terminal to figure out why the connection is breaking, then submit your final Root Cause Diagnosis below.</p>
+            </div>
+
+            <div class="tool-legend">
+                <h4>Available Tools Reference:</h4>
+                <div class="tool-item">ipconfig <span>View local IP adapter settings</span></div>
+                <div class="tool-item">ping [target] <span>Test reachability to an IP/Host</span></div>
+                <div class="tool-item">nslookup [host] <span>Query Domain Name System servers</span></div>
+                <div class="tool-item">tracert [target] <span>Trace path packets take across nodes</span></div>
+                <div class="tool-item">clear <span>Clear terminal buffer screen</span></div>
+            </div>
+        </div>
+
+        <div class="diagnosis-box">
+            <h4 style="font-size: 0.95rem; color: #fff;">Submit Escalation Ticket</h4>
+            <select id="diagnosis-select">
+                <option value="">-- Select Identified Issue --</option>
+                <option value="dhcp">Local workstation failed to get an IP address (APIPA)</option>
+                <option value="dns_wrong">Workstation is using an incorrect or dead DNS Server IP</option>
+                <option value="gateway_down">The default gateway router itself is entirely offline</option>
+                <option value="dns_record">The Intranet host name is missing its DNS entry record</option>
+            </select>
+            <button onclick="submitTicket()">Submit Diagnosis</button>
+        </div>
+    </div>
+
+    <div class="terminal-container">
+        <div class="terminal-header">
+            <div class="terminal-buttons">
+                <div class="dot red"></div>
+                <div class="dot yellow"></div>
+                <div class="dot green"></div>
+            </div>
+            <div class="terminal-title">Windows PowerShell - Network Triage Core Console</div>
+        </div>
+        
+        <div class="terminal-body" id="term-body" onclick="document.getElementById('cmd-input').focus()">
+            <div class="output-block" id="history">Microsoft Windows [Version 10.0.19045]
+(c) Microsoft Corporation. All rights reserved.
+
+Type your network command below to begin investigating...</div>
+            
+            <div class="input-line">
+                <span class="prompt">C:\Users\NetEngineer></span>
+                <input type="text" id="cmd-input" class="terminal-input" autofocus autocomplete="off" spellcheck="false">
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const inputField = document.getElementById('cmd-input');
+    const historyContainer = document.getElementById('history');
+    const termBody = document.getElementById('term-body');
+
+    // Simulated Environment Variables
+    // The "Bug": Workstation has a valid IP and Gateway, can ping IP addresses, but its DNS Server is configured to an invalid address (192.168.1.55 instead of 192.168.1.2)
+    const env = {
+        ip: "192.168.1.104",
+        mask: "255.255.255.0",
+        gateway: "192.168.1.1",
+        dns_server_configured: "192.168.1.55", // WRONG DNS SERVER (Should be 192.168.1.2)
+        real_dns_server: "192.168.1.2"
+    };
+
+    inputField.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            const fullCmd = inputField.value.trim();
+            inputField.value = '';
+            
+            if (fullCmd === '') return;
+            
+            processCommand(fullCmd);
+        }
+    });
+
+    function appendOutput(cmd, response) {
+        historyContainer.innerHTML += `\n\n<span style="color: #64748b;">C:\\Users\\NetEngineer&gt; ${cmd}</span>\n${response}`;
+        termBody.scrollTop = termBody.scrollHeight;
+    }
+
+    function processCommand(rawInput) {
+        const args = rawInput.toLowerCase().split(/\s+/);
+        const baseCmd = args[0];
+        const target = args[1];
+
+        let output = "";
+
+        switch(baseCmd) {
+            case 'clear':
+                historyContainer.innerHTML = "Terminal window cleared.";
+                return;
+                
+            case 'ipconfig':
+                if (args[1] === '/all') {
+                    output = `Windows IP Configuration
+
+   Host Name . . . . . . . . . . . . : ENG-WORKSTATION-04
+   Primary Dns Suffix  . . . . . . . : corporate.local
+
+Ethernet adapter Ethernet0:
+
+   Connection-specific DNS Suffix  . : 
+   Link-local IPv6 Address . . . . . : fe80::d4a3:8812:11f2:991%4
+   IPv4 Address. . . . . . . . . . . : ${env.ip}
+   Subnet Mask . . . . . . . . . . . : ${env.mask}
+   Default Gateway . . . . . . . . . : ${env.gateway}
+   DNS Servers . . . . . . . . . . . : ${env.dns_server_configured}`;
+                } else {
+                    output = `Windows IP Configuration
+
+Ethernet adapter Ethernet0:
+
+   Connection-specific DNS Suffix  . : 
+   IPv4 Address. . . . . . . . . . . : ${env.ip}
+   Subnet Mask . . . . . . . . . . . : ${env.mask}
+   Default Gateway . . . . . . . . . : ${env.gateway}`;
+                }
+                break;
+
+            case 'ping':
+                if (!target) {
+                    output = "Usage: ping [IP_Address_Or_Host_Name]";
+                } else if (target === '192.168.1.1' || target === env.gateway) {
+                    output = `Pinging ${target} with 32 bytes of data:
+Reply from ${target}: bytes=32 time=1ms TTL=64
+Reply from ${target}: bytes=32 time<1ms TTL=64
+Reply from ${target}: bytes=32 time=2ms TTL=64
+
+Ping statistics for ${target}:
+    Packets: Sent = 3, Received = 3, Lost = 0 (0% loss)`;
+                } else if (target === '192.168.1.2') {
+                    output = `Pinging 192.168.1.2 with 32 bytes of data:
+Reply from 192.168.1.2: bytes=32 time=2ms TTL=64
+Reply from 192.168.1.2: bytes=32 time=1ms TTL=64
+
+Ping statistics for 192.168.1.2:
+    Packets: Sent = 2, Received = 2, Lost = 0 (0% loss)`;
+                } else if (target === '192.168.1.55' || target === env.dns_server_configured) {
+                    output = `Pinging ${target} with 32 bytes of data:
+Request timed out.
+Request timed out.
+Request timed out.
+
+Ping statistics for ${target}:
+    Packets: Sent = 3, Received = 0, Lost = 3 (100% loss)`;
+                } else if (target === 'internal-intranet.local') {
+                    output = `Ping request could not find host internal-intranet.local. Please check the name and try again.`;
+                } else {
+                    output = `Pinging ${target}...
+Request timed out.
+Request timed out.`;
+                }
+                break;
+
+            case 'nslookup':
+                if (!target) {
+                    output = "Usage: nslookup [Host_Name]";
+                } else {
+                    output = `DNS request timed out.
+    timeout was 2 seconds.
+*** Can't find server name for address ${env.dns_server_configured}: Timed out
+*** Default servers are not available
+Server:  UnKnown
+Address:  ${env.dns_server_configured}`;
+                }
+                break;
+
+            case 'tracert':
+                if (!target) {
+                    output = "Usage: tracert [Target]";
+                } else if (target === '192.168.1.1' || target === env.gateway) {
+                    output = `Tracing route to ${target} over a maximum of 30 hops:
+
+  1    <1 ms    <1 ms    <1 ms  192.168.1.1
+
+Trace complete.`;
+                } else {
+                    output = `Tracing route to ${target} over a maximum of 30 hops:
+
+  1    * * * Request timed out.
+  2    * * * Request timed out.`;
+                }
+                break;
+
+            default:
+                output = `'${baseCmd}' is not recognized as an internal or external command, operable program or batch file. Try checking the Tool Reference menu.`;
+        }
+
+        appendOutput(rawInput, output);
+    }
+
+    function submitTicket() {
+        const choice = document.getElementById('diagnosis-select').value;
+        if (!choice) {
+            alert("Please analyze the terminal output first and pick an issue option.");
+            return;
+        }
+
+        if (choice === 'dns_wrong') {
+            alert("🎉 CORRECT! Excellent work detective! By using 'ipconfig /all' you noticed the configured DNS server was 192.168.1.55. Running a 'ping' verified that specific IP address is completely unresponsive, explaining why name resolution (nslookup) failed to locate the intranet dashboard.");
+        } else {
+            alert("❌ Incorrect Analysis. Hint: Look closely at your DNS configuration parameters via 'ipconfig /all', then try to 'ping' that specified DNS IP to verify if it is alive!");
+        }
+    }
+</script>
+
+</body>
+</html>
