@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Subnet Puzzle</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f9;
+            color: #333;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            max-width: 800px;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        .instructions {
+            color: #7f8c8d;
+            margin-bottom: 20px;
+        }
+        .scenario {
+            background-color: #eef2f7;
+            padding: 15px;
+            border-left: 5px bold #3498db;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+        .department-card {
+            background: #fff;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s;
+        }
+        .department-card.correct {
+            border-color: #2ecc71;
+            background-color: #eafaf1;
+        }
+        .cidr-options {
+            display: flex;
+            gap: 10px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        button.selected {
+            background-color: #2ecc71;
+        }
+        button.wrong {
+            background-color: #e74c3c;
+        }
+        #feedback {
+            margin-top: 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-align: center;
+            height: 30px;
+        }
+        .reset-btn {
+            background-color: #95a5a6;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>The VLSM Architecture Puzzle</h1>
+    <p class="instructions">Instead of typing numbers, match the departments to the <strong>smallest possible CIDR block</strong> that can accommodate their required usable hosts (remembering to account for Network and Broadcast addresses!).</p>
+    
+    <div class="scenario">
+        Base Network Available: <code>192.168.1.0 /24</code> (256 total IPs)
+    </div>
+
+    <div id="puzzle-box">
+        </div>
+
+    <div id="feedback"></div>
+    <button class="reset-btn" onclick="initGame()">Reset Exercise</button>
+</div>
+
+<script>
+    const departments = [
+        { name: "Engineering", hosts: 110, correctCidr: "/25", chosen: null },
+        { name: "Marketing", hosts: 26, correctCidr: "/27", chosen: null },
+        { name: "Human Resources", hosts: 12, correctCidr: "/28", chosen: null },
+        { name: "Point-to-Point WAN Link", hosts: 2, correctCidr: "/30", chosen: null }
+    ];
+
+    const cidrOptions = ["/25", "/26", "/27", "/28", "/29", "/30"];
+
+    function initGame() {
+        const puzzleBox = document.getElementById('puzzle-box');
+        const feedback = document.getElementById('feedback');
+        feedback.innerText = "";
+        puzzleBox.innerHTML = "";
+
+        departments.forEach((dept, deptIdx) => {
+            dept.chosen = null;
+            
+            const card = document.createElement('div');
+            card.className = 'department-card';
+            card.id = `dept-${deptIdx}`;
+
+            const info = document.createElement('div');
+            info.innerHTML = `<strong>${dept.name}</strong><br><small>Needs ${dept.hosts} usable hosts</small>`;
+            card.appendChild(info);
+
+            const btnContainer = document.createElement('div');
+            btnContainer.className = 'cidr-options';
+
+            cidrOptions.forEach(cidr => {
+                const btn = document.createElement('button');
+                btn.innerText = cidr;
+                btn.onclick = () => checkAnswer(deptIdx, cidr, btn);
+                btnContainer.appendChild(btn);
+            });
+
+            card.appendChild(btnContainer);
+            puzzleBox.appendChild(card);
+        });
+    }
+
+    function checkAnswer(deptIdx, chosenCidr, button) {
+        const dept = departments[deptIdx];
+        const card = document.getElementById(`dept-${deptIdx}`);
+        const buttons = card.querySelectorAll('.cidr-options button');
+
+        // Reset button states for this card
+        buttons.forEach(b => b.className = '');
+
+        if (chosenCidr === dept.correctCidr) {
+            button.className = 'selected';
+            card.className = 'department-card correct';
+            dept.chosen = true;
+            checkWinCondition();
+        } else {
+            button.className = 'wrong';
+            card.className = 'department-card';
+            dept.chosen = false;
+            document.getElementById('feedback').innerHTML = `<span style="color: #e74c3c;">❌ That block size is either too small or wastes too many IPs!</span>`;
+        }
+    }
+
+    function checkWinCondition() {
+        const allCorrect = departments.every(dept => dept.chosen === true);
+        if (allCorrect) {
+            document.getElementById('feedback').innerHTML = `<span style="color: #2ecc71;">🎉 Excellent! You efficiently allocated the address space without overlap!</span>`;
+        }
+    }
+
+    // Run on load
+    initGame();
+</script>
+
+</body>
+</html>
