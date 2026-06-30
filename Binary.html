@@ -286,43 +286,44 @@
 </div>
 
 <script>
-    const fullMemory = [
+    var fullMemory = [
         [0,0,0,0,0,0,0,0], // Octet 1
         [0,0,0,0,0,0,0,0], // Octet 2
         [0,0,0,0,0,0,0,0], // Octet 3
         [0,0,0,0,0,0,0,0]  // Octet 4
     ];
 
-    const weights = [128, 64, 32, 16, 8, 4, 2, 1];
-    let activeOctetIndex = 0; 
-    let currentTargetIP = null;
+    var weights = [128, 64, 32, 16, 8, 4, 2, 1];
+    var activeOctetIndex = 0; 
+    var currentTargetIP = null;
 
-    // Build the grid UI dynamically without using unsafe inline rendering methods
     function initializeGridUI() {
-        const grid = document.getElementById('switchboard-grid');
-        grid.innerHTML = ''; // clear any old layouts
+        var grid = document.getElementById('switchboard-grid');
+        if (!grid) return;
+        grid.innerHTML = ''; 
 
-        weights.forEach((weight, idx) => {
-            const col = document.createElement('div');
+        weights.forEach(function(weight, idx) {
+            var col = document.createElement('div');
             col.className = 'bit-column';
-            col.id = `col-${idx}`;
+            col.id = 'col-' + idx;
 
-            col.innerHTML = `
-                <div class="weight-label">${weight}</div>
-                <label class="switch">
-                    <input type="checkbox" id="switch-${idx}">
-                    <span class="slider"></span>
-                </label>
-                <div class="bit-state" id="state-${idx}">0</div>
-            `;
+            col.innerHTML = '\
+                <div class="weight-label">' + weight + '</div>\
+                <label class="switch">\
+                    <input type="checkbox" id="switch-' + idx + '">\
+                    <span class="slider"></span>\
+                </label>\
+                <div class="bit-state" id="state-' + idx + '">0</div>\
+            ';
             
             grid.appendChild(col);
             
-            // Attach state tracking change handlers natively
-            col.querySelector('input').addEventListener('change', captureBitChange);
+            var inputEl = col.querySelector('input');
+            if (inputEl) {
+                inputEl.addEventListener('change', captureBitChange);
+            }
         });
 
-        // Sync initial view states
         switchOctetView(0);
         processIpStateCalculations();
     }
@@ -330,25 +331,26 @@
     function switchOctetView(octetIndex) {
         activeOctetIndex = octetIndex;
 
-        // Update tab styling states
-        document.querySelectorAll('.tab-btn').forEach((btn, idx) => {
-            btn.classList.toggle('active', idx === octetIndex);
+        var tabs = document.querySelectorAll('.tab-btn');
+        tabs.forEach(function(btn, idx) {
+            if (btn) btn.classList.toggle('active', idx === octetIndex);
         });
 
-        // Update top readout styling focuses
-        document.querySelectorAll('.bin-octet').forEach((el, idx) => {
-            el.classList.toggle('focused', idx === octetIndex);
-        });
-        document.querySelectorAll('.dec-octet').forEach((el, idx) => {
-            el.classList.toggle('focused', idx === octetIndex);
+        var binOctets = document.querySelectorAll('.bin-octet');
+        binOctets.forEach(function(el, idx) {
+            if (el) el.classList.toggle('focused', idx === octetIndex);
         });
 
-        // Load running configuration arrays out of system state directly into the viewports
-        const targetMemoryBlock = fullMemory[octetIndex];
-        weights.forEach((_, bitIdx) => {
-            const checkbox = document.getElementById(`switch-${bitIdx}`);
+        var decOctets = document.querySelectorAll('.dec-octet');
+        decOctets.forEach(function(el, idx) {
+            if (el) el.classList.toggle('focused', idx === octetIndex);
+        });
+
+        var targetMemoryBlock = fullMemory[octetIndex];
+        weights.forEach(function(_, bitIdx) {
+            var checkbox = document.getElementById('switch-' + bitIdx);
             if (checkbox) {
-                checkbox.checked = targetMemoryBlock[bitIdx] === 1;
+                checkbox.checked = (targetMemoryBlock[bitIdx] === 1);
             }
         });
 
@@ -356,8 +358,8 @@
     }
 
     function captureBitChange() {
-        weights.forEach((_, bitIdx) => {
-            const checkbox = document.getElementById(`switch-${bitIdx}`);
+        weights.forEach(function(_, bitIdx) {
+            var checkbox = document.getElementById('switch-' + bitIdx);
             if (checkbox) {
                 fullMemory[activeOctetIndex][bitIdx] = checkbox.checked ? 1 : 0;
             }
@@ -368,10 +370,10 @@
     }
 
     function renderUiGridStates() {
-        weights.forEach((_, bitIdx) => {
-            const checkbox = document.getElementById(`switch-${bitIdx}`);
-            const column = document.getElementById(`col-${bitIdx}`);
-            const stateText = document.getElementById(`state-${bitIdx}`);
+        weights.forEach(function(_, bitIdx) {
+            var checkbox = document.getElementById('switch-' + bitIdx);
+            var column = document.getElementById('col-' + bitIdx);
+            var stateText = document.getElementById('state-' + bitIdx);
             
             if (checkbox && column && stateText) {
                 column.classList.toggle('active', checkbox.checked);
@@ -381,19 +383,21 @@
     }
 
     function processIpStateCalculations() {
-        fullMemory.forEach((octetBlock, octetIdx) => {
-            let decimalTotal = 0;
-            let binaryString = "";
+        fullMemory.forEach(function(octetBlock, octetIdx) {
+            var decimalTotal = 0;
+            var binaryString = "";
 
-            octetBlock.forEach((bitVal, bitIdx) => {
+            octetBlock.forEach(function(bitVal, bitIdx) {
                 binaryString += bitVal.toString();
                 if (bitVal === 1) {
                     decimalTotal += weights[bitIdx];
                 }
             });
 
-            document.getElementById(`bin-o${octetIdx}`).innerText = binaryString;
-            document.getElementById(`dec-o${octetIdx}`).innerText = decimalTotal;
+            var binEl = document.getElementById('bin-o' + octetIdx);
+            var decEl = document.getElementById('dec-o' + octetIdx);
+            if (binEl) binEl.innerText = binaryString;
+            if (decEl) decEl.innerText = decimalTotal;
         });
 
         verifyChallengeStatus();
@@ -401,37 +405,53 @@
 
     function getRunningIPString() {
         return [
-            document.getElementById('dec-o0').innerText,
-            document.getElementById('dec-o1').innerText,
-            document.getElementById('dec-o2').innerText,
-            document.getElementById('dec-o3').innerText
+            document.getElementById('dec-o0') ? document.getElementById('dec-o0').innerText : '0',
+            document.getElementById('dec-o1') ? document.getElementById('dec-o1').innerText : '0',
+            document.getElementById('dec-o2') ? document.getElementById('dec-o2').innerText : '0',
+            document.getElementById('dec-o3') ? document.getElementById('dec-o3').innerText : '0'
         ].join('.');
     }
 
     function generateIPChallenge() {
-        const o1 = [10, 172, 192, 8][Math.floor(Math.random() * 4)];
-        const o2 = [16, 168, 55, 0][Math.floor(Math.random() * 4)];
-        const o3 = Math.floor(Math.random() * 10);
-        const o4 = [1, 50, 128, 255][Math.floor(Math.random() * 4)];
+        var networkOptions = [10, 172, 192, 8];
+        var subnetOptions = [16, 168, 55, 0];
+        var hostOptions = [1, 50, 128, 255];
 
-        currentTargetIP = `${o1}.${o2}.${o3}.${o4}`;
-        document.getElementById('target-display').innerText = `Target IP: ${currentTargetIP}`;
-        document.getElementById('feedback-msg').innerText = "⏳ Awaiting complete 32-bit alignment logic sequence...";
-        document.getElementById('feedback-msg').style.color = "#94a3b8";
+        var o1 = networkOptions[Math.floor(Math.random() * networkOptions.length)];
+        var o2 = subnetOptions[Math.floor(Math.random() * subnetOptions.length)];
+        var o3 = Math.floor(Math.random() * 10);
+        var o4 = hostOptions[Math.floor(Math.random() * hostOptions.length)];
+
+        currentTargetIP = o1 + '.' + o2 + '.' + o3 + '.' + o4;
+        
+        var displayEl = document.getElementById('target-display');
+        var feedbackEl = document.getElementById('feedback-msg');
+        
+        if (displayEl) displayEl.innerText = 'Target IP: ' + currentTargetIP;
+        if (feedbackEl) {
+            feedbackEl.innerText = "⏳ Awaiting complete 32-bit alignment logic sequence...";
+            feedbackEl.style.color = "#94a3b8";
+        }
         
         verifyChallengeStatus();
     }
 
     function zeroAllMemory() {
-        fullMemory.forEach(block => block.fill(0));
+        fullMemory = [
+            [0,0,0,0,0,0,0,0],
+            [0,0,0,0,0,0,0,0],
+            [0,0,0,0,0,0,0,0],
+            [0,0,0,0,0,0,0,0]
+        ];
         switchOctetView(activeOctetIndex);
         processIpStateCalculations();
     }
 
     function verifyChallengeStatus() {
         if (!currentTargetIP) return;
-        const currentIP = getRunningIPString();
-        const msg = document.getElementById('feedback-msg');
+        var currentIP = getRunningIPString();
+        var msg = document.getElementById('feedback-msg');
+        if (!msg) return;
 
         if (currentIP === currentTargetIP) {
             msg.innerText = "🎉 VERIFIED! Whole 32-bit hardware binary map array matches target requirements perfectly!";
@@ -442,8 +462,10 @@
         }
     }
 
-    // Run safe lifecycle window attachment event hooks
-    window.addEventListener('DOMContentLoaded', initializeGridUI);
+    // Explicit native window lifecycle loading hook
+    window.onload = function() {
+        initializeGridUI();
+    };
 </script>
 
 </body>
