@@ -188,4 +188,48 @@
 </div>
 
 <script>
-    var trafficQueue =
+    var trafficQueue = [
+        { ip: "192.168.1.45", correctRoute: "local", reason: "Success! Target IP falls inside the local 192.168.1.0/24 subnet layer boundary. The host resolves via direct local hardware switching (ARP) without needing a gateway." },
+        { ip: "8.8.8.8", correctRoute: "gateway", reason: "Success! Target IP is external (Google Public DNS). Since it sits outside the local network footprint, the computer hands off the packet to the Default Gateway (192.168.1.254) to handle external internet traversal routing." },
+        { ip: "192.168.1.312", correctRoute: "drop", reason: "Success! The octet configuration '312' violates standard IPv4 design limitations (maximum limit is 255). The packet header is invalid and was dropped safely." },
+        { ip: "10.0.5.120", correctRoute: "gateway", reason: "Success! Target IP belongs to a separate Class A corporate network layout segment. The packet must be sent to the Default Gateway to step outside the local segment." },
+        { ip: "192.168.1.200", correctRoute: "local", reason: "Success! Target IP is internal. Direct peer-to-peer connection over the local switch matrix succeeded." }
+    ];
+
+    var queueIndex = 0;
+
+    function handleRouteDecision(chosenOption) {
+        var currentCase = trafficQueue[queueIndex];
+        var consoleEl = document.getElementById('log-console');
+        if (!consoleEl) return;
+
+        if (chosenOption === currentCase.correctRoute) {
+            consoleEl.innerHTML = '<span style="color: #10b981;">' + currentCase.reason + '</span>';
+            
+            queueIndex++;
+            if (queueIndex >= trafficQueue.length) {
+                queueIndex = 0; 
+                setTimeout(function() {
+                    alert("🎉 ALL TRAFFIC CLEAR! You have successfully mastered default gateway routing logic triage rules!");
+                }, 400);
+            }
+            
+            setTimeout(function() {
+                var ipDisplay = document.getElementById('current-packet-ip');
+                if (ipDisplay) ipDisplay.innerText = trafficQueue[queueIndex].ip;
+            }, 800);
+
+        } else {
+            if (chosenOption === 'local') {
+                consoleEl.innerHTML = '<span style="color: #ef4444;">🚨 ROUTING FAULT: Attempted local ARP delivery, but the destination IP address does not match your home network layer boundary mask parameters! The device is stranded.</span>';
+            } else if (chosenOption === 'gateway') {
+                consoleEl.innerHTML = '<span style="color: #ef4444;">🚨 ROUTING FAULT: Forwarded traffic to the Default Gateway unnecessarily! The target IP is on your local subnet, wasting network performance and hop metrics.</span>';
+            } else {
+                consoleEl.innerHTML = '<span style="color: #ef4444;">🚨 ROUTING FAULT: Packet was unceremoniously dropped into null memory arrays. The connection was killed prematurely.</span>';
+            }
+        }
+    }
+</script>
+
+</body>
+</html>
