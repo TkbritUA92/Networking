@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IPv4 Octet Binary Sandbox</title>
+    <title>IPv4 Address Binary Inspector</title>
     <style>
         :root {
             --bg-dark: #0f172a;
             --panel-bg: #1e293b;
             --accent-blue: #38bdf8;
-            --bit-on: #10b981; /* Green for network/IP focus */
+            --bit-on: #10b981;
             --text-light: #f1f5f9;
         }
 
@@ -78,6 +78,7 @@
 
         .dot-separator { color: #64748b; margin: 0 5px; }
         .bin-octet { color: var(--accent-blue); letter-spacing: 2px; }
+        .bin-octet.active-octet { color: var(--bit-on); }
         .dec-octet { color: #fff; }
 
         /* Active Octet Selector Grid */
@@ -191,19 +192,22 @@
             border-radius: 6px;
             cursor: pointer;
             font-size: 0.95rem;
+            transition: opacity 0.2s;
         }
         .btn:hover { opacity: 0.9; }
+        .btn-random { background-color: #a855f7; color: #fff; } /* Purple for randomness */
         .btn-reset { background-color: #475569; color: #fff; border: 1px solid #64748b; }
         .btn-reset:hover { background-color: #334155; }
 
         #target-display {
-            font-size: 1.3rem;
+            font-size: 1.1rem;
             font-weight: bold;
             background: #0f172a;
             padding: 8px 16px;
             border-radius: 6px;
             border: 1px solid #334155;
             font-family: monospace;
+            max-width: 100%;
         }
         #feedback-msg { font-weight: bold; font-size: 1.05rem; }
     </style>
@@ -213,25 +217,25 @@
 <div class="container">
     <header>
         <h1>IPv4 Address <span>Binary Inspector</span></h1>
-        <p>Manipulate binary switches within the 4th octet to construct valid host addresses and analyze boundaries.</p>
+        <p>Manipulate binary switches within the 4th octet to construct valid host addresses and analyze routing scopes.</p>
     </header>
 
     <div class="ip-dashboard">
         <div class="readout-row">
             <div class="readout-label">Binary Notation</div>
             <div class="readout-value">
-                <span class="bin-octet">11000000</span><span class="dot-separator">.</span>
-                <span class="bin-octet">10101000</span><span class="dot-separator">.</span>
-                <span class="bin-octet">00000001</span><span class="dot-separator">.</span>
-                <span class="bin-octet" id="bin-octet-4">00000000</span>
+                <span class="bin-octet" id="bin-octet-1">11000000</span><span class="dot-separator">.</span>
+                <span class="bin-octet" id="bin-octet-2">10101000</span><span class="dot-separator">.</span>
+                <span class="bin-octet" id="bin-octet-3">00000001</span><span class="dot-separator">.</span>
+                <span class="bin-octet active-octet" id="bin-octet-4">00000000</span>
             </div>
         </div>
         <div class="readout-row">
             <div class="readout-label">Dotted-Decimal IP</div>
             <div class="readout-value">
-                <span class="dec-octet">192</span><span class="dot-separator">.</span>
-                <span class="dec-octet">168</span><span class="dot-separator">.</span>
-                <span class="dec-octet">1</span><span class="dot-separator">.</span>
+                <span class="dec-octet" id="dec-octet-1">192</span><span class="dot-separator">.</span>
+                <span class="dec-octet" id="dec-octet-2">168</span><span class="dot-separator">.</span>
+                <span class="dec-octet" id="dec-octet-3">1</span><span class="dot-separator">.</span>
                 <span class="dec-octet" id="dec-octet-4" style="color: var(--bit-on);">0</span>
             </div>
         </div>
@@ -260,10 +264,11 @@
 
     <div class="challenge-card">
         <h2>Networking Alignment Target Missions</h2>
-        <p style="color: #94a3b8;">Generate structural routing challenges below, then toggle the host switches to build the target network IP.</p>
+        <p style="color: #94a3b8;">Generate matching target value objectives, scramble the default prefix strings, or clear your running workspaces cleanly.</p>
         
         <div class="challenge-controls">
-            <button class="btn" onclick="getNetworkTask()">Generate IP Challenge</button>
+            <button class="btn" onclick="getNetworkTask()">Generate Task</button>
+            <button class="btn btn-random" onclick="scramblePrefix()">Randomize Network Prefix</button>
             <button class="btn btn-reset" onclick="resetSwitches()">Zero Out Switches</button>
             <div id="target-display">Target 4th Octet Value: --</div>
             <div id="feedback-msg"></div>
@@ -274,6 +279,28 @@
 <script>
     const weights = [128, 64, 32, 16, 8, 4, 2, 1];
     let currentTargetVal = null;
+
+    // Helper to turn integer into padded 8-bit binary string
+    function toBinaryString(num) {
+        return num.toString(2).padStart(8, '0');
+    }
+
+    function scramblePrefix() {
+        // Generate random integers up to classful boundary spectrum limits (1 - 223 to avoid weird loopbacks/multicast)
+        const oct1 = Math.floor(Math.random() * 222) + 1;
+        const oct2 = Math.floor(Math.random() * 255);
+        const oct3 = Math.floor(Math.random() * 255);
+
+        // Map updates to Decimal interface
+        document.getElementById('dec-octet-1').innerText = oct1;
+        document.getElementById('dec-octet-2').innerText = oct2;
+        document.getElementById('dec-octet-3').innerText = oct3;
+
+        // Map updates to Binary layout blocks
+        document.getElementById('bin-octet-1').innerText = toBinaryString(oct1);
+        document.getElementById('bin-octet-2').innerText = toBinaryString(oct2);
+        document.getElementById('bin-octet-3').innerText = toBinaryString(oct3);
+    }
 
     function calculateOctet() {
         let total = 0;
@@ -305,10 +332,10 @@
     }
 
     const networkTasks = [
-        { text: "Set Host IP address to 192.168.1.10", val: 10 },
-        { text: "Configure for the exact boundary limit of a /25 network (Value: 128)", val: 128 },
-        { text: "Set bit registers to create host address 192.168.1.55", val: 55 },
-        { text: "Turn on all bits to form a traditional /24 Broadcast address (Value: 255)", val: 255 }
+        { text: "Configure the host portion value to exactly 10", val: 10 },
+        { text: "Configure the exact starting boundary limit of a /25 network layout block (Value: 128)", val: 128 },
+        { text: "Construct bit registers to form host address ending parameter 55", val: 55 },
+        { text: "Turn on all host bits to build a standard /24 Broadcast boundary address (Value: 255)", val: 255 }
     ];
 
     function getNetworkTask() {
