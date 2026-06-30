@@ -268,23 +268,8 @@
     </div>
 
     <div class="octet-grid-container">
-        <div class="bit-row">
-            <script>
-                const bitWeights = [128, 64, 32, 16, 8, 4, 2, 1];
-                bitWeights.forEach((weight, idx) => {
-                    document.write(`
-                        <div class="bit-column" id="col-${idx}">
-                            <div class="weight-label">${weight}</div>
-                            <label class="switch">
-                                <input type="checkbox" id="switch-${idx}" onchange="captureBitChange()">
-                                <span class="slider"></span>
-                            </label>
-                            <div class="bit-state" id="state-${idx}">0</div>
-                        </div>
-                    `);
-                });
-            </script>
-        </div>
+        <div class="bit-row" id="switchboard-grid">
+            </div>
     </div>
 
     <div class="challenge-card">
@@ -301,7 +286,6 @@
 </div>
 
 <script>
-    // Memory allocation state arrays tracking all 32 switches
     const fullMemory = [
         [0,0,0,0,0,0,0,0], // Octet 1
         [0,0,0,0,0,0,0,0], // Octet 2
@@ -312,6 +296,36 @@
     const weights = [128, 64, 32, 16, 8, 4, 2, 1];
     let activeOctetIndex = 0; 
     let currentTargetIP = null;
+
+    // Build the grid UI dynamically without using unsafe inline rendering methods
+    function initializeGridUI() {
+        const grid = document.getElementById('switchboard-grid');
+        grid.innerHTML = ''; // clear any old layouts
+
+        weights.forEach((weight, idx) => {
+            const col = document.createElement('div');
+            col.className = 'bit-column';
+            col.id = `col-${idx}`;
+
+            col.innerHTML = `
+                <div class="weight-label">${weight}</div>
+                <label class="switch">
+                    <input type="checkbox" id="switch-${idx}">
+                    <span class="slider"></span>
+                </label>
+                <div class="bit-state" id="state-${idx}">0</div>
+            `;
+            
+            grid.appendChild(col);
+            
+            // Attach state tracking change handlers natively
+            col.querySelector('input').addEventListener('change', captureBitChange);
+        });
+
+        // Sync initial view states
+        switchOctetView(0);
+        processIpStateCalculations();
+    }
 
     function switchOctetView(octetIndex) {
         activeOctetIndex = octetIndex;
@@ -329,21 +343,24 @@
             el.classList.toggle('focused', idx === octetIndex);
         });
 
-        // Load the stored memory configurations into the physical checkbox inputs
+        // Load running configuration arrays out of system state directly into the viewports
         const targetMemoryBlock = fullMemory[octetIndex];
         weights.forEach((_, bitIdx) => {
             const checkbox = document.getElementById(`switch-${bitIdx}`);
-            checkbox.checked = targetMemoryBlock[bitIdx] === 1;
+            if (checkbox) {
+                checkbox.checked = targetMemoryBlock[bitIdx] === 1;
+            }
         });
 
         renderUiGridStates();
     }
 
     function captureBitChange() {
-        // Pull current live configuration from active panel interface state
         weights.forEach((_, bitIdx) => {
-            const isChecked = document.getElementById(`switch-${bitIdx}`).checked;
-            fullMemory[activeOctetIndex][bitIdx] = isChecked ? 1 : 0;
+            const checkbox = document.getElementById(`switch-${bitIdx}`);
+            if (checkbox) {
+                fullMemory[activeOctetIndex][bitIdx] = checkbox.checked ? 1 : 0;
+            }
         });
 
         processIpStateCalculations();
@@ -351,20 +368,19 @@
     }
 
     function renderUiGridStates() {
-        // Redraw only the localized switchboard column styles for the open tab view
         weights.forEach((_, bitIdx) => {
-            const isChecked = document.getElementById(`switch-${bitIdx}`).checked;
+            const checkbox = document.getElementById(`switch-${bitIdx}`);
             const column = document.getElementById(`col-${bitIdx}`);
             const stateText = document.getElementById(`state-${bitIdx}`);
             
-            column.classList.toggle('active', isChecked);
-            stateText.innerText = isChecked ? "1" : "0";
+            if (checkbox && column && stateText) {
+                column.classList.toggle('active', checkbox.checked);
+                stateText.innerText = checkbox.checked ? "1" : "0";
+            }
         });
     }
 
     function processIpStateCalculations() {
-        let fullStringMatch = "";
-
         fullMemory.forEach((octetBlock, octetIdx) => {
             let decimalTotal = 0;
             let binaryString = "";
@@ -376,7 +392,6 @@
                 }
             });
 
-            // Push strings down to primary UI display areas
             document.getElementById(`bin-o${octetIdx}`).innerText = binaryString;
             document.getElementById(`dec-o${octetIdx}`).innerText = decimalTotal;
         });
@@ -394,7 +409,6 @@
     }
 
     function generateIPChallenge() {
-        // Build random structured IPs using common networking parameters
         const o1 = [10, 172, 192, 8][Math.floor(Math.random() * 4)];
         const o2 = [16, 168, 55, 0][Math.floor(Math.random() * 4)];
         const o3 = Math.floor(Math.random() * 10);
@@ -404,11 +418,13 @@
         document.getElementById('target-display').innerText = `Target IP: ${currentTargetIP}`;
         document.getElementById('feedback-msg').innerText = "⏳ Awaiting complete 32-bit alignment logic sequence...";
         document.getElementById('feedback-msg').style.color = "#94a3b8";
+        
+        verifyChallengeStatus();
     }
 
     function zeroAllMemory() {
         fullMemory.forEach(block => block.fill(0));
-        switchOctetView(activeOctetIndex); // Refresh view state cleanly
+        switchOctetView(activeOctetIndex);
         processIpStateCalculations();
     }
 
@@ -426,8 +442,8 @@
         }
     }
 
-    // Initial Launch Setup Trigger
-    processIpStateCalculations();
+    // Run safe lifecycle window attachment event hooks
+    window.addEventListener('DOMContentLoaded', initializeGridUI);
 </script>
 
 </body>
