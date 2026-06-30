@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Routing Triage: Default Gateway Simulator</title>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --panel-bg: #1e293b;
+            --accent-blue: #38bdf8;
+            --success: #10b981;
+            --error: #ef4444;
+            --text-light: #f1f5f9;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            padding: 30px 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 15px;
+        }
+
+        header h1 { font-size: 2.2rem; }
+        header h1 span { color: var(--accent-blue); }
+        header p { color: #94a3b8; margin-top: 5px; }
+
+        /* Topology Status Panel */
+        .topology-card {
+            background-color: #020617;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            font-family: monospace;
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+        .topology-card h3 { color: var(--accent-blue); margin-bottom: 10px; font-family: sans-serif; }
+
+        /* Conveyor Belt / Active Packet Box */
+        .packet-conveyor {
+            background: #1e293b;
+            border: 2px dashed #475569;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        .packet {
+            display: inline-block;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            padding: 20px 40px;
+            border-radius: 8px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            border: 1px solid #60a5fa;
+        }
+
+        .packet h2 { font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; color: #93c5fd; margin-bottom: 5px;}
+        .packet .dest-ip { font-size: 2.2rem; font-family: monospace; font-weight: bold; color: #fff; }
+
+        /* Action Controls Layout */
+        .routing-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .action-btn {
+            padding: 20px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #0f172a;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.1s, opacity 0.2s;
+            text-align: center;
+        }
+        .action-btn:hover { opacity: 0.9; transform: translateY(-2px); }
+        .action-btn:active { transform: translateY(0); }
+        
+        .btn-local { background-color: var(--accent-blue); }
+        .btn-gateway { background-color: var(--success); }
+        .btn-drop { background-color: var(--error); color: #fff; }
+
+        /* Feedback Display Console */
+        .console-box {
+            background: #020617;
+            border: 1px solid #334155;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: monospace;
+            min-height: 80px;
+            font-size: 1.05rem;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Default Gateway <span>Route Switchboard</span></h1>
+        <p>Analyze incoming packet destination parameters and determine the correct next-hop routing logical execution path.</p>
+    </header>
+
+    <div class="topology-card">
+        <h3>Local Interface Configuration Profile</h3>
+        <div>Workstation LAN Scope: <strong>192.168.1.0 /24</strong> (Valid Local Range: 192.168.1.1 to 192.168.1.254)</div>
+        <div>Configured Default Gateway: <strong>192.168.1.254</strong></div>
+    </div>
+
+    <div class="packet-conveyor">
+        <div id="packet-frame">
+            <div class="packet">
+                <h2>Inbound Packet Header Data</h2>
+                <div class="dest-ip" id="current-packet-ip">192.168.1.45</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="routing-actions">
+        <button class="action-btn btn-local" onclick="handleRouteDecision('local')">🔊 Switch 1:<br>Deliver Locally (ARP)</button>
+        <button class="action-btn btn-gateway" onclick="handleRouteDecision('gateway')">🚀 Switch 2:<br>Forward to Gateway</button>
+        <button class="action-btn btn-drop" onclick="handleRouteDecision('drop')">❌ Switch 3:<br>Drop Packet</button>
+    </div>
+
+    <div class="console-box" id="log-console">
+        <span style="color: #64748b;">[SYSTEM] Interface up. Ready to process traffic queues. Click an option switch above to route the first packet...</span>
+    </div>
+</div>
+
+<script>
+    // Explicit, standard Array containing real test scenarios
+    var trafficQueue = [
+        { ip: "192.168.1.45", correctRoute: "local", reason: "Success! Target IP falls inside the local 192.168.1.0/24 subnet layer boundary. The host resolves via direct local hardware switching (ARP) without needing a gateway." },
+        { ip: "8.8.8.8", correctRoute: "gateway", reason: "Success! Target IP is external (Google Public DNS). Since it sits outside the local network footprint, the computer hands off the packet to the Default Gateway (192.168.1.254) to handle external internet traversal routing." },
+        { ip: "192.168.1.312", correctRoute: "drop", reason: "Success! The octet configuration '312' violates standard IPv4 design limitations (maximum limit is 255). The packet header is invalid and was dropped safely." },
+        { ip: "10.0.5.120", correctRoute: "gateway", reason: "Success! Target IP belongs to a separate Class A corporate network layout segment. The packet must be sent to the Default Gateway to step outside the local segment." },
+        { ip: "192.168.1.200", correctRoute: "local", reason: "Success! Target IP is internal. Direct peer-to-peer connection over the local switch matrix succeeded." }
+    ];
+
+    var queueIndex = 0;
+
+    function handleRouteDecision(chosenOption) {
+        var currentCase = trafficQueue[queueIndex];
+        var consoleEl = document.getElementById('log-console');
+        if (!consoleEl) return;
+
+        if (chosenOption === currentCase.correctRoute) {
+            consoleEl.innerHTML = '<span style="color: #10b981;">' + currentCase.reason + '</span>';
+            
+            // Advance task indexing pointers safely
+            queueIndex++;
+            if (queueIndex >= trafficQueue.length) {
+                // Loop back or end gracefully
+                queueIndex = 0; 
+                setTimeout(function() {
+                    alert("🎉 ALL TRAFFIC CLEAR! You have successfully mastered default gateway routing logic triage rules!");
+                }, 400);
+            }
+            
+            // Render next packet parameters down into UI targets
+            setTimeout(function() {
+                var ipDisplay = document.getElementById('current-packet-ip');
+                if (ipDisplay) ipDisplay.innerText = trafficQueue[queueIndex].ip;
+            }, 800);
+
+        } else {
+            // Error mismatch handled explicitly
+            if (chosenOption === 'local') {
+                consoleEl.innerHTML = '<span style="color: #ef4444;">🚨 ROUTING FAULT: Attempted local ARP delivery, but the destination IP address does not match your home network layer boundary mask parameters! The device is stranded.</span>';
+            } else if (chosenOption === 'gateway') {
+                consoleEl.innerHTML = '<span style="color: #ef4444;">🚨 ROUTING FAULT: Forwarded traffic to the Default Gateway unnecessarily! The target IP is on your local subnet, wasting network performance and hop metrics.</span>';
+            } else {
+                consoleEl.innerHTML = '<span style="color: #ef4444;">🚨 ROUTING FAULT: Packet was unceremoniously dropped into null memory arrays. The connection was killed prematurely.</span>';
+            }
+        }
+    }
+</script>
+
+</body>
+</html>
