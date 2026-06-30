@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subnet Detective: Case #02</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --accent: #38bdf8;
+            --success: #2ecc71;
+            --error: #e74c3c;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 30px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .wrapper {
+            max-width: 1100px;
+            width: 100%;
+        }
+
+        header {
+            margin-bottom: 25px;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 15px;
+        }
+
+        header h1 { font-size: 2rem; color: var(--text-main); }
+        header h1 span { color: var(--accent); }
+        header p { color: var(--text-muted); margin-top: 5px; }
+
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: 25px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid #334155;
+        }
+
+        .card h2 {
+            font-size: 1.25rem;
+            margin-bottom: 15px;
+            color: var(--accent);
+            border-bottom: 1px solid #334155;
+            padding-bottom: 8px;
+        }
+
+        /* Network Topology Map */
+        .topology-container {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            background: #020617;
+            border-radius: 6px;
+            padding: 40px 20px;
+            position: relative;
+            margin-bottom: 20px;
+            min-height: 220px;
+        }
+
+        .node {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            z-index: 2;
+            transition: transform 0.2s;
+            padding: 10px;
+            border-radius: 6px;
+            border: 2px solid transparent;
+        }
+
+        .node:hover {
+            transform: scale(1.05);
+            background: #1e293b;
+        }
+
+        .node.active {
+            border-color: var(--accent);
+            background: #1e293b;
+        }
+
+        .node-icon {
+            font-size: 2.5rem;
+            margin-bottom: 8px;
+        }
+
+        .node-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .node-ip {
+            font-family: monospace;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        /* SVG Connection Lines */
+        .network-lines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* Inspector Panel */
+        .inspector-placeholder {
+            color: var(--text-muted);
+            font-style: italic;
+            text-align: center;
+            padding: 40px 0;
+        }
+
+        .config-row {
+            margin-bottom: 15px;
+        }
+
+        .config-row label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .config-value {
+            font-family: monospace;
+            background: #0f172a;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 1rem;
+            border: 1px solid #334155;
+        }
+
+        input.config-value-input {
+            width: 100%;
+            color: #fff;
+            outline: none;
+        }
+
+        input.config-value-input:focus {
+            border-color: var(--accent);
+        }
+
+        .btn-action {
+            background-color: var(--accent);
+            color: #0f172a;
+            border: none;
+            padding: 10px 15px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            transition: opacity 0.2s;
+        }
+
+        .btn-action:hover { opacity: 0.9; }
+
+        /* Logs / Feedback Console */
+        .console {
+            background: #020617;
+            font-family: monospace;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #334155;
+            height: 120px;
+            overflow-y: auto;
+            font-size: 0.9rem;
+        }
+
+        .log-entry { margin-bottom: 5px; color: #a7f3d0; }
+        .log-entry.error { color: #fca5a5; }
+        .log-entry.info { color: #93c5fd; }
+    </style>
+</head>
+<body>
+
+<div class="wrapper">
+    <header>
+        <h1>Case File #02: <span>The Subnet Detective</span></h1>
+        <p><strong>Scenario:</strong> The Finance Workstation cannot fetch data from the Database Server. Run diagnostic checks, click on nodes to inspect configurations, and resolve the logic error.</p>
+    </header>
+
+    <div class="grid-layout">
+        <div>
+            <div class="card" style="margin-bottom: 25px;">
+                <h2>Live Network Topology</h2>
+                <div class="topology-container">
+                    <svg class="network-lines">
+                        <line x1="20%" y1="50%" x2="50%" y2="50%" style="stroke:#334155;stroke-width:3" />
+                        <line x1="50%" y1="50%" x2="80%" y2="50%" style="stroke:#334155;stroke-width:3" />
+                    </svg>
+
+                    <div class="node" id="node-finance" onclick="inspectNode('finance')">
+                        <div class="node-icon">💻</div>
+                        <div class="node-name">Finance PC</div>
+                        <div class="node-ip">192.168.1.10</div>
+                    </div>
+
+                    <div class="node" id="node-router" onclick="inspectNode('router')">
+                        <div class="node-icon">⚡</div>
+                        <div class="node-name">Core Router</div>
+                        <div class="node-ip">Gateway</div>
+                    </div>
+
+                    <div class="node" id="node-db" onclick="inspectNode('db')">
+                        <div class="node-icon">🖳</div>
+                        <div class="node-name">DB Server</div>
+                        <div class="node-ip">192.168.1.200</div>
+                    </div>
+                </div>
+
+                <button class="btn-action" onclick="runPingTest()">▶ Run End-to-End Connectivity Test (Ping)</button>
+            </div>
+
+            <div class="card">
+                <h2>Diagnostic Console Logs</h2>
+                <div class="console" id="console-logs">
+                    <div class="log-entry info">[SYSTEM] Security operations environment initialized. Ready for triage.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" id="inspector-panel">
+            <h2>Device Configuration Inspector</h2>
+            <div class="inspector-placeholder" id="inspector-empty">
+                Select any node on the topology map to verify its network interface card configurations.
+            </div>
+            
+            <div id="inspector-content" style="display: none;">
+                <h3 id="inspect-title" style="margin-bottom: 15px; font-size: 1.1rem; color: #fff;">Device Details</h3>
+                
+                <div class="config-row">
+                    <label>IPv4 Address</label>
+                    <div class="config-value" id="inspect-ip">0.0.0.0</div>
+                </div>
+
+                <div class="config-row">
+                    <label>Subnet Mask</label>
+                    <div id="mask-container">
+                        </div>
+                </div>
+
+                <div class="config-row">
+                    <label>Default Gateway</label>
+                    <div class="config-value" id="inspect-gw">0.0.0.0</div>
+                </div>
+
+                <div id="save-container" style="margin-top: 20px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Configuration states
+    const networkData = {
+        finance: {
+            name: "Finance PC (VLAN 10)",
+            ip: "192.168.1.10",
+            mask: "255.255.255.128 (/25)",
+            gw: "192.168.1.1",
+            editable: false
+        },
+        router: {
+            name: "Core Inter-VLAN Router",
+            ip: "VLAN 10: 192.168.1.1 | VLAN 20: 192.168.1.129",
+            mask: "255.255.255.128 | 255.255.255.128",
+            gw: "None (External Edge)",
+            editable: false
+        },
+        db: {
+            name: "Database Server (VLAN 20)",
+            ip: "192.168.1.200",
+            mask: "255.255.255.0", // Broken setting!
+            gw: "192.168.1.129",
+            editable: true
+        }
+    };
+
+    let selectedNodeId = null;
+
+    function addLog(text, type = 'info') {
+        const consoleLogs = document.getElementById('console-logs');
+        const entry = document.createElement('div');
+        entry.className = `log-entry ${type}`;
+        entry.innerText = `[${new Date().toLocaleTimeString()}] ${text}`;
+        consoleLogs.appendChild(entry);
+        consoleLogs.scrollTop = consoleLogs.scrollHeight;
+    }
+
+    function inspectNode(nodeId) {
+        selectedNodeId = nodeId;
+        
+        // Update selection UI highlight
+        document.querySelectorAll('.node').forEach(n => n.classList.remove('active'));
+        document.getElementById(`node-${nodeId}`).classList.add('active');
+
+        // Toggle visibility
+        document.getElementById('inspector-empty').style.display = 'none';
+        document.getElementById('inspector-content').style.display = 'block';
+
+        // Load data
+        const node = networkData[nodeId];
+        document.getElementById('inspect-title').innerText = node.name;
+        document.getElementById('inspect-ip').innerText = node.ip;
+        document.getElementById('inspect-gw').innerText = node.gw;
+
+        const maskContainer = document.getElementById('mask-container');
+        const saveContainer = document.getElementById('save-container');
+        
+        if (node.editable) {
+            maskContainer.innerHTML = `<input type="text" id="mask-input" class="config-value input field config-value-input" value="${node.mask}">`;
+            saveContainer.innerHTML = `<button class="btn-action" style="background-color: var(--success);" onclick="saveConfiguration()">Apply Configurations</button>`;
+        } else {
+            maskContainer.innerHTML = `<div class="config-value">${node.mask}</div>`;
+            saveContainer.innerHTML = '';
+        }
+    }
+
+    function saveConfiguration() {
+        if (selectedNodeId === 'db') {
+            const inputVal = document.getElementById('mask-input').value.trim();
+            networkData.db.mask = inputVal;
+            addLog(`Updated Subnet Mask on DB Server to: ${inputVal}`, 'info');
+            inspectNode('db'); // refresh
+        }
+    }
+
+    function runPingTest() {
+        addLog("Initiating ping diagnostic test from Finance PC (192.168.1.10) to DB Server (192.168.1.200)...", 'info');
+        
+        setTimeout(() => {
+            addLog("Outbound Path: Packet sent to default gateway (192.168.1.1). Router routed packet across to VLAN 20 gateway interface successfully.", 'info');
+        }, 800);
+
+        setTimeout(() => {
+            // Check win conditions
+            const currentMask = networkData.db.mask.replace(/\s+/g, '');
+            
+            if (currentMask === "255.255.255.128" || currentMask === "255.255.255.128(/25)") {
+                addLog("Return Path: DB Server correctly calculated that 192.168.1.10 sits outside its /25 boundary! It successfully forwarded the response back through its gateway (192.168.1.129).", 'info');
+                setTimeout(() => {
+                    addLog("✨ SUCCESS! Ping replies received. Asymmetric network boundary alignment complete!", 'log-entry');
+                    alert("System Restored! You caught the subnet logical routing mismatch anomaly successfully.");
+                }, 600);
+            } else if (currentMask === "255.255.255.0") {
+                addLog("🚨 DROP ERROR: DB Server believes 192.168.1.10 is on its LOCAL subnet due to its /24 mask! It is broadcasting locally via ARP instead of utilizing its gateway. Packet dropped due to asymmetrical boundary mismatch.", 'error');
+            } else {
+                addLog(`🚨 ROUTING CONFIG MISMATCH: The mask "${currentMask}" does not dynamically align to match the /25 allocation on this segment. Check the router configuration interfaces for a hint!`, 'error');
+            }
+        }, 1600);
+    }
+</script>
+
+</body>
+</html>
