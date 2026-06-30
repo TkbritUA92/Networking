@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IPv4 Address Binary Inspector</title>
+    <title>32-Bit IPv4 Full Binary Sandbox</title>
     <style>
         :root {
             --bg-dark: #0f172a;
@@ -77,24 +77,45 @@
         }
 
         .dot-separator { color: #64748b; margin: 0 5px; }
-        .bin-octet { color: var(--accent-blue); letter-spacing: 2px; }
-        .bin-octet.active-octet { color: var(--bit-on); }
-        .dec-octet { color: #fff; }
+        .bin-octet { color: #cbd5e1; letter-spacing: 2px; transition: color 0.2s; }
+        .bin-octet.focused { color: var(--accent-blue); border-bottom: 2px solid var(--accent-blue); }
+        .dec-octet { color: #fff; transition: color 0.2s; }
+        .dec-octet.focused { color: var(--accent-blue); font-weight: 900; }
 
-        /* Active Octet Selector Grid */
+        /* Octet Tab Selector */
+        .octet-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: -1px;
+        }
+
+        .tab-btn {
+            background: #111827;
+            color: #94a3b8;
+            border: 1px solid #334155;
+            border-bottom: none;
+            padding: 12px 20px;
+            font-weight: bold;
+            font-size: 0.95rem;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            background: var(--panel-bg);
+            color: #fff;
+            border-color: #334155;
+            box-shadow: inset 0 3px 0 var(--accent-blue);
+        }
+
+        /* Active Interface Controls */
         .octet-grid-container {
             background-color: var(--panel-bg);
             border: 1px solid #334155;
-            border-radius: 12px;
+            border-radius: 0 12px 12px 12px;
             padding: 25px;
             margin-bottom: 25px;
-        }
-
-        .octet-selector-title {
-            font-size: 1.1rem;
-            margin-bottom: 15px;
-            color: var(--accent-blue);
-            font-weight: 600;
         }
 
         .bit-row {
@@ -112,7 +133,7 @@
             padding: 15px 5px;
             border-radius: 8px;
             border: 1px solid #334155;
-            transition: all 0.2s;
+            transition: all 0.15s;
         }
 
         .bit-column.active {
@@ -195,19 +216,17 @@
             transition: opacity 0.2s;
         }
         .btn:hover { opacity: 0.9; }
-        .btn-random { background-color: #a855f7; color: #fff; } /* Purple for randomness */
         .btn-reset { background-color: #475569; color: #fff; border: 1px solid #64748b; }
         .btn-reset:hover { background-color: #334155; }
 
         #target-display {
-            font-size: 1.1rem;
+            font-size: 1.3rem;
             font-weight: bold;
             background: #0f172a;
             padding: 8px 16px;
             border-radius: 6px;
             border: 1px solid #334155;
             font-family: monospace;
-            max-width: 100%;
         }
         #feedback-msg { font-weight: bold; font-size: 1.05rem; }
     </style>
@@ -216,33 +235,39 @@
 
 <div class="container">
     <header>
-        <h1>IPv4 Address <span>Binary Inspector</span></h1>
-        <p>Manipulate binary switches within the 4th octet to construct valid host addresses and analyze routing scopes.</p>
+        <h1>32-Bit IPv4 <span>Address Builder</span></h1>
+        <p>Switch between octets to build out complete custom IPv4 addressing blocks configuration records.</p>
     </header>
 
     <div class="ip-dashboard">
         <div class="readout-row">
-            <div class="readout-label">Binary Notation</div>
+            <div class="readout-label">Full Binary View</div>
             <div class="readout-value">
-                <span class="bin-octet" id="bin-octet-1">11000000</span><span class="dot-separator">.</span>
-                <span class="bin-octet" id="bin-octet-2">10101000</span><span class="dot-separator">.</span>
-                <span class="bin-octet" id="bin-octet-3">00000001</span><span class="dot-separator">.</span>
-                <span class="bin-octet active-octet" id="bin-octet-4">00000000</span>
+                <span class="bin-octet focused" id="bin-o0">00000000</span><span class="dot-separator">.</span>
+                <span class="bin-octet" id="bin-o1">00000000</span><span class="dot-separator">.</span>
+                <span class="bin-octet" id="bin-o2">00000000</span><span class="dot-separator">.</span>
+                <span class="bin-octet" id="bin-o3">00000000</span>
             </div>
         </div>
         <div class="readout-row">
             <div class="readout-label">Dotted-Decimal IP</div>
             <div class="readout-value">
-                <span class="dec-octet" id="dec-octet-1">192</span><span class="dot-separator">.</span>
-                <span class="dec-octet" id="dec-octet-2">168</span><span class="dot-separator">.</span>
-                <span class="dec-octet" id="dec-octet-3">1</span><span class="dot-separator">.</span>
-                <span class="dec-octet" id="dec-octet-4" style="color: var(--bit-on);">0</span>
+                <span class="dec-octet focused" id="dec-o0">0</span><span class="dot-separator">.</span>
+                <span class="dec-octet" id="dec-o1">0</span><span class="dot-separator">.</span>
+                <span class="dec-octet" id="dec-o2">0</span><span class="dot-separator">.</span>
+                <span class="dec-octet" id="dec-o3">0</span>
             </div>
         </div>
     </div>
 
+    <div class="octet-tabs">
+        <button class="tab-btn active" onclick="switchOctetView(0)">Octet 1</button>
+        <button class="tab-btn" onclick="switchOctetView(1)">Octet 2</button>
+        <button class="tab-btn" onclick="switchOctetView(2)">Octet 3</button>
+        <button class="tab-btn" onclick="switchOctetView(3)">Octet 4</button>
+    </div>
+
     <div class="octet-grid-container">
-        <div class="octet-selector-title">Hardware Switchboard (Modifying 4th Octet / Host Segment)</div>
         <div class="bit-row">
             <script>
                 const bitWeights = [128, 64, 32, 16, 8, 4, 2, 1];
@@ -251,7 +276,7 @@
                         <div class="bit-column" id="col-${idx}">
                             <div class="weight-label">${weight}</div>
                             <label class="switch">
-                                <input type="checkbox" id="switch-${idx}" onchange="calculateOctet()">
+                                <input type="checkbox" id="switch-${idx}" onchange="captureBitChange()">
                                 <span class="slider"></span>
                             </label>
                             <div class="bit-state" id="state-${idx}">0</div>
@@ -263,114 +288,129 @@
     </div>
 
     <div class="challenge-card">
-        <h2>Networking Alignment Target Missions</h2>
-        <p style="color: #94a3b8;">Generate matching target value objectives, scramble the default prefix strings, or clear your running workspaces cleanly.</p>
+        <h2>System Configuration Alignment Mission</h2>
+        <p style="color: #94a3b8;">Generate a complex multi-octet challenge target configuration parameter. Swap between tabs above to adjust each block.</p>
         
         <div class="challenge-controls">
-            <button class="btn" onclick="getNetworkTask()">Generate Task</button>
-            <button class="btn btn-random" onclick="scramblePrefix()">Randomize Network Prefix</button>
-            <button class="btn btn-reset" onclick="resetSwitches()">Zero Out Switches</button>
-            <div id="target-display">Target 4th Octet Value: --</div>
+            <button class="btn" onclick="generateIPChallenge()">Generate Full IP Challenge</button>
+            <button class="btn btn-reset" onclick="zeroAllMemory()">Wipe All 32-Bits</button>
+            <div id="target-display">Target Destination IP: -- . -- . -- . --</div>
             <div id="feedback-msg"></div>
         </div>
     </div>
 </div>
 
 <script>
-    const weights = [128, 64, 32, 16, 8, 4, 2, 1];
-    let currentTargetVal = null;
-
-    // Helper to turn integer into padded 8-bit binary string
-    function toBinaryString(num) {
-        return num.toString(2).padStart(8, '0');
-    }
-
-    function scramblePrefix() {
-        // Generate random integers up to classful boundary spectrum limits (1 - 223 to avoid weird loopbacks/multicast)
-        const oct1 = Math.floor(Math.random() * 222) + 1;
-        const oct2 = Math.floor(Math.random() * 255);
-        const oct3 = Math.floor(Math.random() * 255);
-
-        // Map updates to Decimal interface
-        document.getElementById('dec-octet-1').innerText = oct1;
-        document.getElementById('dec-octet-2').innerText = oct2;
-        document.getElementById('dec-octet-3').innerText = oct3;
-
-        // Map updates to Binary layout blocks
-        document.getElementById('bin-octet-1').innerText = toBinaryString(oct1);
-        document.getElementById('bin-octet-2').innerText = toBinaryString(oct2);
-        document.getElementById('bin-octet-3').innerText = toBinaryString(oct3);
-    }
-
-    function calculateOctet() {
-        let total = 0;
-        let binaryStr = "";
-
-        weights.forEach((weight, idx) => {
-            const isChecked = document.getElementById(`switch-${idx}`).checked;
-            const column = document.getElementById(`col-${idx}`);
-            const stateText = document.getElementById(`state-${idx}`);
-
-            if (isChecked) {
-                total += weight;
-                binaryStr += "1";
-                column.classList.add('active');
-                stateText.innerText = "1";
-            } else {
-                binaryStr += "0";
-                column.classList.remove('active');
-                stateText.innerText = "0";
-            }
-        });
-
-        // Update real-time views
-        document.getElementById('bin-octet-4').innerText = binaryStr;
-        document.getElementById('dec-octet-4').innerText = total;
-
-        // Verify task parameters
-        verifyNetworkTask(total);
-    }
-
-    const networkTasks = [
-        { text: "Configure the host portion value to exactly 10", val: 10 },
-        { text: "Configure the exact starting boundary limit of a /25 network layout block (Value: 128)", val: 128 },
-        { text: "Construct bit registers to form host address ending parameter 55", val: 55 },
-        { text: "Turn on all host bits to build a standard /24 Broadcast boundary address (Value: 255)", val: 255 }
+    // Memory allocation state arrays tracking all 32 switches
+    const fullMemory = [
+        [0,0,0,0,0,0,0,0], // Octet 1
+        [0,0,0,0,0,0,0,0], // Octet 2
+        [0,0,0,0,0,0,0,0], // Octet 3
+        [0,0,0,0,0,0,0,0]  // Octet 4
     ];
 
-    function getNetworkTask() {
-        const randomIndex = Math.floor(Math.random() * networkTasks.length);
-        const task = networkTasks[randomIndex];
-        currentTargetVal = task.val;
-        
-        document.getElementById('target-display').innerText = `Target: ${task.text}`;
-        document.getElementById('feedback-msg').innerText = "⏳ Toggling bit registers...";
+    const weights = [128, 64, 32, 16, 8, 4, 2, 1];
+    let activeOctetIndex = 0; 
+    let currentTargetIP = null;
+
+    function switchOctetView(octetIndex) {
+        activeOctetIndex = octetIndex;
+
+        // Update tab styling states
+        document.querySelectorAll('.tab-btn').forEach((btn, idx) => {
+            btn.classList.toggle('active', idx === octetIndex);
+        });
+
+        // Update top readout styling focuses
+        document.querySelectorAll('.bin-octet').forEach((el, idx) => {
+            el.classList.toggle('focused', idx === octetIndex);
+        });
+        document.querySelectorAll('.dec-octet').forEach((el, idx) => {
+            el.classList.toggle('focused', idx === octetIndex);
+        });
+
+        // Load the stored memory configurations into the physical checkbox inputs
+        const targetMemoryBlock = fullMemory[octetIndex];
+        weights.forEach((_, bitIdx) => {
+            const checkbox = document.getElementById(`switch-${bitIdx}`);
+            checkbox.checked = targetMemoryBlock[bitIdx] === 1;
+        });
+
+        renderUiGridStates();
+    }
+
+    function captureBitChange() {
+        // Pull current live configuration from active panel interface state
+        weights.forEach((_, bitIdx) => {
+            const isChecked = document.getElementById(`switch-${bitIdx}`).checked;
+            fullMemory[activeOctetIndex][bitIdx] = isChecked ? 1 : 0;
+        });
+
+        processIpStateCalculations();
+        renderUiGridStates();
+    }
+
+    function renderUiGridStates() {
+        // Redraw only the localized switchboard column styles for the open tab view
+        weights.forEach((_, bitIdx) => {
+            const isChecked = document.getElementById(`switch-${bitIdx}`).checked;
+            const column = document.getElementById(`col-${bitIdx}`);
+            const stateText = document.getElementById(`state-${bitIdx}`);
+            
+            column.classList.toggle('active', isChecked);
+            stateText.innerText = isChecked ? "1" : "0";
+        });
+    }
+
+    function processIpStateCalculations() {
+        let fullStringMatch = "";
+
+        fullMemory.forEach((octetBlock, octetIdx) => {
+            let decimalTotal = 0;
+            let binaryString = "";
+
+            octetBlock.forEach((bitVal, bitIdx) => {
+                binaryString += bitVal.toString();
+                if (bitVal === 1) {
+                    decimalTotal += weights[bitIdx];
+                }
+            });
+
+            // Push strings down to primary UI display areas
+            document.getElementById(`bin-o${octetIdx}`).innerText = binaryString;
+            document.getElementById(`dec-o${octetIdx}`).innerText = decimalTotal;
+        });
+
+        verifyChallengeStatus();
+    }
+
+    function getRunningIPString() {
+        return [
+            document.getElementById('dec-o0').innerText,
+            document.getElementById('dec-o1').innerText,
+            document.getElementById('dec-o2').innerText,
+            document.getElementById('dec-o3').innerText
+        ].join('.');
+    }
+
+    function generateIPChallenge() {
+        // Build random structured IPs using common networking parameters
+        const o1 = [10, 172, 192, 8][Math.floor(Math.random() * 4)];
+        const o2 = [16, 168, 55, 0][Math.floor(Math.random() * 4)];
+        const o3 = Math.floor(Math.random() * 10);
+        const o4 = [1, 50, 128, 255][Math.floor(Math.random() * 4)];
+
+        currentTargetIP = `${o1}.${o2}.${o3}.${o4}`;
+        document.getElementById('target-display').innerText = `Target IP: ${currentTargetIP}`;
+        document.getElementById('feedback-msg').innerText = "⏳ Awaiting complete 32-bit alignment logic sequence...";
         document.getElementById('feedback-msg').style.color = "#94a3b8";
     }
 
-    function resetSwitches() {
-        weights.forEach((_, idx) => {
-            document.getElementById(`switch-${idx}`).checked = false;
-        });
-        calculateOctet();
+    function zeroAllMemory() {
+        fullMemory.forEach(block => block.fill(0));
+        switchOctetView(activeOctetIndex); // Refresh view state cleanly
+        processIpStateCalculations();
     }
 
-    function verifyNetworkTask(currentTotal) {
-        if (currentTargetVal === null) return;
-        const msg = document.getElementById('feedback-msg');
-
-        if (currentTotal === currentTargetVal) {
-            msg.innerText = "🎉 MATCH! Decimal and binary registers successfully aligned for this IP segment.";
-            msg.style.color = "#10b981";
-        } else if (currentTotal > currentTargetVal) {
-            msg.innerText = "⚠️ Overflow! Current bit configuration exceeds target octet boundaries.";
-            msg.style.color = "#ef4444";
-        } else {
-            msg.innerText = "⏳ Insufficient total value. Turn on additional host bits...";
-            msg.style.color = "#f59e0b";
-        }
-    }
-</script>
-
-</body>
-</html>
+    function verifyChallengeStatus() {
+        if (!currentTarget
