@@ -413,4 +413,22 @@
     }
 
     function verifyChallengeStatus() {
-        if (!currentTarget
+        if (!currentTargetIP) return;
+        const currentIP = getRunningIPString();
+        const msg = document.getElementById('feedback-msg');
+
+        if (currentIP === currentTargetIP) {
+            msg.innerText = "🎉 VERIFIED! Whole 32-bit hardware binary map array matches target requirements perfectly!";
+            msg.style.color = "#10b981";
+        } else {
+            msg.innerText = "⏳ Whole state validation mismatch. Keep configuring bit segments...";
+            msg.style.color = "#f59e0b";
+        }
+    }
+
+    // Initial Launch Setup Trigger
+    processIpStateCalculations();
+</script>
+
+</body>
+</html>
