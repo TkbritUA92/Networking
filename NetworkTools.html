@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Network Tools Lab: Terminal Simulator</title>
+    <title>Network Tools Lab: Multi-Ticket Simulator</title>
     <style>
         :root {
             --bg-color: #0b0f19;
             --terminal-bg: #05070c;
             --text-main: #f1f5f9;
             --text-muted: #64748b;
-            --terminal-green: #38bdf8; /* Modern blue-terminal style */
+            --terminal-green: #38bdf8;
             --terminal-text: #e2e8f0;
             --accent: #38bdf8;
             --success: #10b981;
@@ -29,10 +29,10 @@
         }
 
         .wrapper {
-            max-width: 1200px;
+            max-width: 1300px;
             width: 100%;
             display: grid;
-            grid-template-columns: 1fr 1.8fr;
+            grid-template-columns: 1.2fr 1.8fr;
             gap: 30px;
         }
 
@@ -44,24 +44,46 @@
             padding: 25px;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
+            gap: 20px;
         }
 
-        h1 { font-size: 1.75rem; color: #fff; margin-bottom: 10px; }
+        h1 { font-size: 1.75rem; color: #fff; }
         h1 span { color: var(--accent); }
+
+        /* Scenario Selector Tabs */
+        .ticket-selector {
+            display: flex;
+            gap: 10px;
+            margin-top: 5px;
+        }
+        .ticket-tab {
+            flex: 1;
+            background: #1f2937;
+            border: 1px solid #374151;
+            color: var(--text-muted);
+            padding: 10px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        .ticket-tab.active {
+            background: var(--accent);
+            color: #000;
+            font-weight: bold;
+            border-color: var(--accent);
+        }
+
         .objective-box {
             background-color: #1f2937;
             padding: 15px;
             border-left: 4px solid var(--accent);
             border-radius: 4px;
-            margin: 15px 0;
+            line-height: 1.4;
         }
         .objective-box h3 { margin-bottom: 5px; font-size: 1rem; color: #fff; }
-        .objective-box p { font-size: 0.9rem; color: #9ca3af; line-height: 1.4; }
+        .objective-box p { font-size: 0.9rem; color: #9ca3af; }
 
-        .tool-legend {
-            margin-top: 20px;
-        }
         .tool-legend h4 { color: #fff; font-size: 0.95rem; margin-bottom: 10px; }
         .tool-item {
             font-family: monospace;
@@ -69,7 +91,7 @@
             padding: 6px 10px;
             border-radius: 4px;
             font-size: 0.85rem;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             display: flex;
             justify-content: space-between;
             color: #cbd5e1;
@@ -84,7 +106,7 @@
             box-shadow: 0 20px 40px rgba(0,0,0,0.4);
             display: flex;
             flex-direction: column;
-            height: 600px;
+            height: 650px;
             overflow: hidden;
         }
 
@@ -93,13 +115,13 @@
             padding: 10px 15px;
             display: flex;
             align-items: center;
+            justify-content: space-between;
             border-bottom: 1px solid #334155;
         }
 
         .terminal-buttons {
             display: flex;
             gap: 6px;
-            margin-right: 15px;
         }
         .dot { width: 12px; height: 12px; border-radius: 50%; }
         .dot.red { background-color: #ef4444; }
@@ -147,9 +169,8 @@
             outline: none;
         }
 
-        /* Diagnosis Form */
+        /* Diagnosis Area */
         .diagnosis-box {
-            margin-top: 15px;
             background: #111827;
             padding: 15px;
             border-radius: 6px;
@@ -168,6 +189,16 @@
         }
         button { background: var(--accent); color: #000; border: none; transition: opacity 0.2s;}
         button:hover { opacity: 0.9; }
+        button.btn-reset {
+            background-color: #374151;
+            color: #fff;
+            padding: 5px 10px;
+            font-size: 0.8rem;
+            margin-top: 0;
+            width: auto;
+            border: 1px solid #4b5563;
+        }
+        button.btn-reset:hover { background-color: #4b5563; }
     </style>
 </head>
 <body>
@@ -176,56 +207,50 @@
     <div class="briefing-panel">
         <div>
             <h1>Command Line <span>Triage</span></h1>
-            <p style="color: var(--text-muted); font-size: 0.95rem;">You are the Tier 1 Network Engineer on duty.</p>
+            <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 15px;">Select an active support ticket to load the scenario:</p>
             
-            <div class="objective-box">
-                <h3>The Incident Report:</h3>
-                <p>Users are complaining they cannot load the internal dashboard website at <code>internal-intranet.local</code>. Physical cables are fine.</p>
+            <div class="ticket-selector">
+                <button class="ticket-tab active" onclick="switchTicket(1)">Ticket #101</button>
+                <button class="ticket-tab" onclick="switchTicket(2)">Ticket #102</button>
+                <button class="ticket-tab" onclick="switchTicket(3)">Ticket #103</button>
             </div>
-
-            <div class="objective-box" style="border-color: var(--success)">
-                <h3>Your Objective:</h3>
-                <p>Use the simulator terminal to figure out why the connection is breaking, then submit your final Root Cause Diagnosis below.</p>
-            </div>
+            
+            <div class="objective-box" id="incident-box">
+                </div>
 
             <div class="tool-legend">
                 <h4>Available Tools Reference:</h4>
-                <div class="tool-item">ipconfig <span>View local IP adapter settings</span></div>
-                <div class="tool-item">ping [target] <span>Test reachability to an IP/Host</span></div>
-                <div class="tool-item">nslookup [host] <span>Query Domain Name System servers</span></div>
-                <div class="tool-item">tracert [target] <span>Trace path packets take across nodes</span></div>
-                <div class="tool-item">clear <span>Clear terminal buffer screen</span></div>
+                <div class="tool-item">ipconfig <span>View adapter settings (/all for full details)</span></div>
+                <div class="tool-item">ping [target] <span>Test end-to-end node reachability</span></div>
+                <div class="tool-item">nslookup [host] <span>Query DNS server mapping infrastructure</span></div>
+                <div class="tool-item">tracert [target] <span>Track pathways across hops and segments</span></div>
+                <div class="tool-item">clear <span>Wipe terminal buffer display screen</span></div>
             </div>
         </div>
 
         <div class="diagnosis-box">
-            <h4 style="font-size: 0.95rem; color: #fff;">Submit Escalation Ticket</h4>
+            <h4 style="font-size: 0.95rem; color: #fff;">Escalation Dispatch Root Cause</h4>
             <select id="diagnosis-select">
-                <option value="">-- Select Identified Issue --</option>
-                <option value="dhcp">Local workstation failed to get an IP address (APIPA)</option>
-                <option value="dns_wrong">Workstation is using an incorrect or dead DNS Server IP</option>
-                <option value="gateway_down">The default gateway router itself is entirely offline</option>
-                <option value="dns_record">The Intranet host name is missing its DNS entry record</option>
-            </select>
-            <button onclick="submitTicket()">Submit Diagnosis</button>
+                </select>
+            <button onclick="submitTicket()">Submit Diagnostic Assessment</button>
         </div>
     </div>
 
     <div class="terminal-container">
         <div class="terminal-header">
-            <div class="terminal-buttons">
-                <div class="dot red"></div>
-                <div class="dot yellow"></div>
-                <div class="dot green"></div>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div class="terminal-buttons">
+                    <div class="dot red"></div>
+                    <div class="dot yellow"></div>
+                    <div class="dot green"></div>
+                </div>
+                <div class="terminal-title" id="terminal-title-text">Windows PowerShell - Ticket #101 environment</div>
             </div>
-            <div class="terminal-title">Windows PowerShell - Network Triage Core Console</div>
+            <button class="btn-reset" onclick="resetTerminal()">Reset Terminal</button>
         </div>
         
         <div class="terminal-body" id="term-body" onclick="document.getElementById('cmd-input').focus()">
-            <div class="output-block" id="history">Microsoft Windows [Version 10.0.19045]
-(c) Microsoft Corporation. All rights reserved.
-
-Type your network command below to begin investigating...</div>
+            <div class="output-block" id="history"></div>
             
             <div class="input-line">
                 <span class="prompt">C:\Users\NetEngineer></span>
@@ -236,30 +261,104 @@ Type your network command below to begin investigating...</div>
 </div>
 
 <script>
+    let currentTicket = 1;
+
+    // Database containing our specific scenarios
+    const scenarios = {
+        1: {
+            title: "Ticket #101: Web App Name Error",
+            brief: "<strong>Reported Issue:</strong> Users can't access the local portal site at <code>internal-intranet.local</code>. Network cables are healthy.",
+            env: {
+                ip: "192.168.1.104", mask: "255.255.255.0", gateway: "192.168.1.1", dns: "192.168.1.55"
+            },
+            options: [
+                { value: "", text: "-- Select Root Cause --" },
+                { value: "apipa", text: "Workstation drops onto an APIPA allocation auto-config block" },
+                { value: "dns_wrong", text: "The workstation profile targets a dead/incorrect DNS Server target" },
+                { value: "gateway_down", text: "The default gateway route processing router is flat out down" }
+            ],
+            correct: "dns_wrong"
+        },
+        2: {
+            title: "Ticket #102: Missing Local Connection",
+            brief: "<strong>Reported Issue:</strong> A workstation was moved to an empty desk but completely lost access to the local department file share network (<code>10.0.5.20</code>).",
+            env: {
+                ip: "169.254.89.21", mask: "255.255.0.0", gateway: "", dns: ""
+            },
+            options: [
+                { value: "", text: "-- Select Root Cause --" },
+                { value: "dhcp_fail", text: "DHCP allocation failure (APIPA scope auto-assignment trigger)" },
+                { value: "dns_record", text: "The DNS record registry map entry was flushed incorrectly" },
+                { value: "mask_mismatch", text: "The host has an asymmetrical routing variable block subnet mask" }
+            ],
+            correct: "dhcp_fail"
+        },
+        3: {
+            title: "Ticket #103: Remote Cloud Breakage",
+            brief: "<strong>Reported Issue:</strong> System developers cannot ping the cloud data repository at <code>8.8.8.8</code>. Local internal services work completely fine.",
+            env: {
+                ip: "172.16.42.50", mask: "255.255.255.0", gateway: "172.16.42.254", dns: "172.16.42.1"
+            },
+            options: [
+                { value: "", text: "-- Select Root Cause --" },
+                { value: "local_cable", text: "The station network physical connection drop drops packets locally" },
+                { value: "dns_dead", text: "Domain Name Resolution stack internal infrastructure failure" },
+                { value: "gateway_down", text: "The local Default Gateway router interface is dropped/dead" }
+            ],
+            correct: "gateway_down"
+        }
+    };
+
     const inputField = document.getElementById('cmd-input');
     const historyContainer = document.getElementById('history');
     const termBody = document.getElementById('term-body');
-
-    // Simulated Environment Variables
-    // The "Bug": Workstation has a valid IP and Gateway, can ping IP addresses, but its DNS Server is configured to an invalid address (192.168.1.55 instead of 192.168.1.2)
-    const env = {
-        ip: "192.168.1.104",
-        mask: "255.255.255.0",
-        gateway: "192.168.1.1",
-        dns_server_configured: "192.168.1.55", // WRONG DNS SERVER (Should be 192.168.1.2)
-        real_dns_server: "192.168.1.2"
-    };
 
     inputField.addEventListener('keydown', function(e) {
         if (e.key === 'Enter') {
             const fullCmd = inputField.value.trim();
             inputField.value = '';
-            
             if (fullCmd === '') return;
-            
             processCommand(fullCmd);
         }
     });
+
+    function switchTicket(ticketId) {
+        currentTicket = ticketId;
+        
+        // Update selector tabs UI styling
+        document.querySelectorAll('.ticket-tab').forEach((tab, index) => {
+            if (index + 1 === ticketId) tab.classList.add('active');
+            else tab.classList.remove('active');
+        });
+
+        document.getElementById('terminal-title-text').innerText = `Windows PowerShell - Ticket #${100 + ticketId} environment`;
+        
+        loadScenario(ticketId);
+    }
+
+    function loadScenario(id) {
+        const sc = scenarios[id];
+        
+        // Load the text prompt
+        document.getElementById('incident-box').innerHTML = `<h3>${sc.title}</h3><p>${sc.brief}</p>`;
+        
+        // Load custom drop-down variables
+        const select = document.getElementById('diagnosis-select');
+        select.innerHTML = '';
+        sc.options.forEach(opt => {
+            const el = document.createElement('option');
+            el.value = opt.value;
+            el.innerText = opt.text;
+            select.appendChild(el);
+        });
+
+        resetTerminal();
+    }
+
+    function resetTerminal() {
+        historyContainer.innerHTML = `Microsoft Windows [Version 10.0.19045]\n(c) Microsoft Corporation. All rights reserved.\n\n[SYSTEM] Ticket #${100 + currentTicket} architecture sandbox live. Input structural command parameters to begin diagnostic verification...`;
+        termBody.scrollTop = termBody.scrollHeight;
+    }
 
     function appendOutput(cmd, response) {
         historyContainer.innerHTML += `\n\n<span style="color: #64748b;">C:\\Users\\NetEngineer&gt; ${cmd}</span>\n${response}`;
@@ -270,108 +369,76 @@ Type your network command below to begin investigating...</div>
         const args = rawInput.toLowerCase().split(/\s+/);
         const baseCmd = args[0];
         const target = args[1];
+        const activeEnv = scenarios[currentTicket].env;
 
         let output = "";
 
+        if (baseCmd === 'clear') {
+            historyContainer.innerHTML = "Terminal window buffered output flushed clean.";
+            return;
+        }
+
         switch(baseCmd) {
-            case 'clear':
-                historyContainer.innerHTML = "Terminal window cleared.";
-                return;
-                
             case 'ipconfig':
-                if (args[1] === '/all') {
-                    output = `Windows IP Configuration
-
-   Host Name . . . . . . . . . . . . : ENG-WORKSTATION-04
-   Primary Dns Suffix  . . . . . . . : corporate.local
-
-Ethernet adapter Ethernet0:
-
-   Connection-specific DNS Suffix  . : 
-   Link-local IPv6 Address . . . . . : fe80::d4a3:8812:11f2:991%4
-   IPv4 Address. . . . . . . . . . . : ${env.ip}
-   Subnet Mask . . . . . . . . . . . : ${env.mask}
-   Default Gateway . . . . . . . . . : ${env.gateway}
-   DNS Servers . . . . . . . . . . . : ${env.dns_server_configured}`;
+                const showAll = args[1] === '/all';
+                if (currentTicket === 2) {
+                    // APIPA scope simulation data
+                    output = `Windows IP Configuration\n\nEthernet adapter Ethernet0:\n   IPv4 Address. . . . . . . . . . . : ${activeEnv.ip}\n   Subnet Mask . . . . . . . . . . . : ${activeEnv.mask}\n   Default Gateway . . . . . . . . . : ${showAll ? '0.0.0.0' : ''}\n${showAll ? '   DNS Servers . . . . . . . . . . . : 0.0.0.0' : ''}`;
                 } else {
-                    output = `Windows IP Configuration
-
-Ethernet adapter Ethernet0:
-
-   Connection-specific DNS Suffix  . : 
-   IPv4 Address. . . . . . . . . . . : ${env.ip}
-   Subnet Mask . . . . . . . . . . . : ${env.mask}
-   Default Gateway . . . . . . . . . : ${env.gateway}`;
+                    output = `Windows IP Configuration\n\nEthernet adapter Ethernet0:\n   IPv4 Address. . . . . . . . . . . : ${activeEnv.ip}\n   Subnet Mask . . . . . . . . . . . : ${activeEnv.mask}\n   Default Gateway . . . . . . . . . : ${activeEnv.gateway}\n${showAll ? '   DNS Servers . . . . . . . . . . . : ' + activeEnv.dns : ''}`;
                 }
                 break;
 
             case 'ping':
                 if (!target) {
-                    output = "Usage: ping [IP_Address_Or_Host_Name]";
-                } else if (target === '192.168.1.1' || target === env.gateway) {
-                    output = `Pinging ${target} with 32 bytes of data:
-Reply from ${target}: bytes=32 time=1ms TTL=64
-Reply from ${target}: bytes=32 time<1ms TTL=64
-Reply from ${target}: bytes=32 time=2ms TTL=64
-
-Ping statistics for ${target}:
-    Packets: Sent = 3, Received = 3, Lost = 0 (0% loss)`;
-                } else if (target === '192.168.1.2') {
-                    output = `Pinging 192.168.1.2 with 32 bytes of data:
-Reply from 192.168.1.2: bytes=32 time=2ms TTL=64
-Reply from 192.168.1.2: bytes=32 time=1ms TTL=64
-
-Ping statistics for 192.168.1.2:
-    Packets: Sent = 2, Received = 2, Lost = 0 (0% loss)`;
-                } else if (target === '192.168.1.55' || target === env.dns_server_configured) {
-                    output = `Pinging ${target} with 32 bytes of data:
-Request timed out.
-Request timed out.
-Request timed out.
-
-Ping statistics for ${target}:
-    Packets: Sent = 3, Received = 0, Lost = 3 (100% loss)`;
-                } else if (target === 'internal-intranet.local') {
-                    output = `Ping request could not find host internal-intranet.local. Please check the name and try again.`;
-                } else {
-                    output = `Pinging ${target}...
-Request timed out.
-Request timed out.`;
+                    output = "Usage structural parameter syntax mismatch: ping [IP_Address_Or_Host_Name]";
+                } else if (currentTicket === 2) {
+                    output = `Pinging ${target} with 32 bytes of data:\nPing packet transmission validation failed. Destination host unreachable.`;
+                } else if (currentTicket === 1) {
+                    if (target === '192.168.1.1') {
+                        output = `Reply from 192.168.1.1: bytes=32 time=1ms TTL=64\nSuccess verification path validated cleanly.`;
+                    } else if (target === '192.168.1.55') {
+                        output = `Pinging 192.168.1.55...\nRequest timed out.\nRequest timed out.\nPackets: Sent = 2, Received = 0, Lost = 2 (100% loss).`;
+                    } else if (target === 'internal-intranet.local') {
+                        output = `Ping request could not locate query path endpoint destination for name string: internal-intranet.local.`;
+                    } else {
+                        output = `Request timed out via operational perimeter boundary constraints.`;
+                    }
+                } else if (currentTicket === 3) {
+                    if (target === '172.16.42.1') {
+                        output = `Reply from 172.16.42.1: bytes=32 time=1ms TTL=64`;
+                    } else if (target === '172.16.42.254' || target === '8.8.8.8') {
+                        output = `Pinging ${target}...\nRequest timed out.\nRequest timed out.`;
+                    } else {
+                        output = `Request target drop edge encountered.`;
+                    }
                 }
                 break;
 
             case 'nslookup':
                 if (!target) {
-                    output = "Usage: nslookup [Host_Name]";
+                    output = "Usage structural parameter syntax mismatch: nslookup [Host_Name]";
+                } else if (currentTicket === 1) {
+                    output = `*** DNS request timed out.\n*** Server endpoint unreachable structural fault: Address [${activeEnv.dns}]`;
+                } else if (currentTicket === 3) {
+                    output = `Server: internal-dns-core.local\nAddress: 172.16.42.1\n\nName:    ${target}\nAddress: 8.8.8.8`;
                 } else {
-                    output = `DNS request timed out.
-    timeout was 2 seconds.
-*** Can't find server name for address ${env.dns_server_configured}: Timed out
-*** Default servers are not available
-Server:  UnKnown
-Address:  ${env.dns_server_configured}`;
+                    output = `DNS structural translation failed parsing context parameters.`;
                 }
                 break;
 
             case 'tracert':
                 if (!target) {
-                    output = "Usage: tracert [Target]";
-                } else if (target === '192.168.1.1' || target === env.gateway) {
-                    output = `Tracing route to ${target} over a maximum of 30 hops:
-
-  1    <1 ms    <1 ms    <1 ms  192.168.1.1
-
-Trace complete.`;
+                    output = "Usage structural parameter syntax mismatch: tracert [Target_Destination]";
+                } else if (currentTicket === 3) {
+                    output = `Tracing route to ${target} over a maximum of 30 hops:\n\n  1    * * * Request timed out across primary interface drop.\nTrace diagnostic termination validation encountered.`;
                 } else {
-                    output = `Tracing route to ${target} over a maximum of 30 hops:
-
-  1    * * * Request timed out.
-  2    * * * Request timed out.`;
+                    output = ` 1    <1 ms    <1 ms    <1 ms  Local hop boundary verified loop.\nTrace terminal complete.`;
                 }
                 break;
 
             default:
-                output = `'${baseCmd}' is not recognized as an internal or external command, operable program or batch file. Try checking the Tool Reference menu.`;
+                output = `'${baseCmd}' is not recognized as an internal or external structural command console parameter asset. Try validating via tool reference parameters.`;
         }
 
         appendOutput(rawInput, output);
@@ -379,17 +446,22 @@ Trace complete.`;
 
     function submitTicket() {
         const choice = document.getElementById('diagnosis-select').value;
+        const targetCorrect = scenarios[currentTicket].correct;
+
         if (!choice) {
-            alert("Please analyze the terminal output first and pick an issue option.");
+            alert("Analyze the diagnostic output inside the core console window before submitting.");
             return;
         }
 
-        if (choice === 'dns_wrong') {
-            alert("🎉 CORRECT! Excellent work detective! By using 'ipconfig /all' you noticed the configured DNS server was 192.168.1.55. Running a 'ping' verified that specific IP address is completely unresponsive, explaining why name resolution (nslookup) failed to locate the intranet dashboard.");
+        if (choice === targetCorrect) {
+            alert("🎉 CRITICAL ANALYSIS EXCELLENT! You have isolated the core structural root cause component flawlessly. Bug parameters completely solved!");
         } else {
-            alert("❌ Incorrect Analysis. Hint: Look closely at your DNS configuration parameters via 'ipconfig /all', then try to 'ping' that specified DNS IP to verify if it is alive!");
+            alert("❌ ESCALATION DEFECTIVE: The logs run inside the simulator console do not align logic flags to that root cause element. Re-examine adapter configurations or route checks!");
         }
     }
+
+    // Run Initial State on Application Setup Launch Execution
+    loadScenario(1);
 </script>
 
 </body>
